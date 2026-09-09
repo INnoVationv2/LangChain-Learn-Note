@@ -1,7 +1,7 @@
 import * as z from "zod";
 import {createAgent, tool, type ToolRuntime} from "langchain";
 import {MemorySaver} from "@langchain/langgraph";
-import {ApiKey, BaseURL, MODEL, model} from "../tools/utils.ts";
+import {ApiKey, BaseURL, MODEL} from "../tools/utils.ts";
 import {ChatOpenAI} from "@langchain/openai";
 
 const UserDetailSchema = z.object({
