@@ -4,7 +4,7 @@ import {
     END,
     GraphNode, interrupt, LangGraphRunnableConfig, MemorySaver,
     MessagesValue,
-    ReducedValue, Runtime, Send,
+    ReducedValue, Send,
     START,
     StateGraph,
     StateSchema, UntrackedValue
@@ -256,7 +256,11 @@ test('Context', async () => {
         }
 
     const graph = new StateGraph(stateSchema, contextSchema)
-        .addNode("nodeA", nodeA)
+        .addNode("nodeA", nodeA, {
+            retryPolicy: {
+
+            }
+        })
         .addEdge(START, "nodeA")
         .addEdge("nodeA", END)
         .compile();

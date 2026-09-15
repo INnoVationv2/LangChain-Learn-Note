@@ -232,6 +232,68 @@ const graph = new StateGraph(State)
 - `START`节点: 表示接收用户输入的节点
 - `END`节点: 表示终止节点
 
+### 5.添加重试策略
+
+```ts
+const graph = new StateGraph(State)
+  .addNode("nodeName", nodeFunction, { retryPolicy: {} })
+  .compile();
+```
+
+retryPolicy定义如下:
+
+```ts
+type RetryPolicy = {
+  /** 首次重试前的等待时间，单位ms，默认 500 */
+  initialInterval?: number;
+
+  /** 每次重试后，等待时间的增长倍数，默认 2 */
+  backoffFactor?: number;
+
+  /** 两次尝试之间的最大等待时间，单位ms，默认 128000 */
+  maxInterval?: number;
+
+  /** 最大尝试次数，包含首次执行，默认 3 */
+  maxAttempts?: number;
+
+  /** 是否给等待时间添加随机抖动，默认 true */
+  jitter?: boolean;
+
+  /** 判断异常是否需要重试：返回 true 重试，false 不重试 */
+  retryOn?: (e: any) => boolean;
+
+  /** 重试时是否记录警告日志，默认 true */
+  logWarning?: boolean;
+};
+```
+
+Demo
+
+```ts
+ .addNode("query_database", queryDatabase, {
+    retryPolicy: {
+      retryOn: (e: any): boolean => {
+        if (e instanceof Database.SqliteError) {
+          // Retry on "SQLITE_BUSY" error
+          return e.code === "SQLITE_BUSY";
+        }
+        return false; // Don't retry on other errors
+      },
+    },
+  })
+```
+
+### 6.跳转到多个节点
+
+```ts
+const routeBcOrCd: ConditionalEdgeRouter<{ InputSchema: typeof State; Nodes: "b" | "c" | "d" }> = (state) => {
+  if (state.which === "cd") {
+    return ["c", "d"];
+  }
+  return ["b", "c"];
+};
+```
+
 ## 3.Edge
 
 边主要有以下几种类型：
@@ -258,7 +320,7 @@ const graph = new StateGraph(State)
    graph.addEdge(nodeB, "END");
    ```
 
-### 条件边`routingFunction`
+### 条件边
 
 不更新状态，仅路由
 
@@ -316,7 +378,7 @@ graph.addConditionalEdges(START, sendNode);
 - **作为 `invoke` 或 `stream` 的输入**：使用 `resume`，恢复被 `interrupt` 暂停的执行。
 - **从Tool返回**：与从Node返回类似，在工具内部同时更新状态并控制执行流程。
 
-### 1.**从Node返回**
+### 1.**Node返回Command**
 
 ```ts
 graph.addNode("NodeA", (state) => {
@@ -357,9 +419,10 @@ builder.addNode("myNode", myNode, {
 
 遇到`interrupt()`时,传入`new Command({ resume: ... })`继续执行
 
+resume的值会作为interrupt()的返回值。
+
 ```ts
 const humanReview = async (state: typeof StateAnnotation.State) => {
-  // Pauses the graph and waits for a value
   const answer = interrupt("Do you approve?");
   return { messages: [{ role: "user", content: answer }] };
 };
@@ -369,7 +432,7 @@ const result = await graph.invoke({ messages: [...] }, config);
 const resumed = await graph.invoke(new Command({ resume: "yes" }), config);
 ```
 
-### 3.从Tool返回
+### 3.Tool返回Command
 
 Tool也可以返回 `Command`，更新State并控制执行流程：
 
@@ -377,6 +440,38 @@ Tool也可以返回 `Command`，更新State并控制执行流程：
 - `goto`：指定工具执行完成后要跳转的节点。
 
 同样的, Tool如果返回动态边,不要和静态边混用
+
+```ts
+const lookupUserInfo = tool(
+  async (input, runtime) => {
+    const userId = runtime.serverInfo?.user?.identity;
+    const userInfo = getUserInfo(userId);
+    return new Command({
+      update: {userInfo: userInfo},
+      goto: "otherSubgraph",
+    });
+  },
+  {
+    name: "lookupUserInfo",
+    description: "...",
+    schema: z.object({}),
+  }
+);
+```
+
+### 4.子图跳转到父图
+
+```ts
+const myNode = (state: State): Command => {
+  return new Command({
+    update: { foo: "bar" },
+    goto: "otherSubgraph",//父图中的Node名
+    graph: Command.PARENT //父图
+  });
+};
+```
+
+
 
 ## 6.Context
 
@@ -412,7 +507,7 @@ const config = {context: {dbUsername: "admin", dbPassword: "123456", dbUrl: "mys
 console.log(await graph.invoke({input: "Hello"}, config));
 ```
 
-### SuperStep
+### 1. SuperStep
 
 图单次执行的最大`SuperStep`数默认为25步。达到此限制，将抛出`GraphRecursionError`。
 
@@ -426,17 +521,81 @@ await graph.invoke(inputs, {
 config.metadata.langgraph_step
 ```
 
-# 二. 使用Graph API
+### 2.运行时指定LLM和System Prompt
 
+```ts
+const ConfigSchema = z.object({
+  modelProvider: z.string().default("anthropic"),
+  systemMessage: z.string().optional(),
+});
 
+const State = new StateSchema({
+  messages: MessagesValue,
+});
 
-Update
+const MODELS = {
+  anthropic: new ChatAnthropic({ model: "claude" }),
+  openai: new ChatOpenAI({ model: "gpt" }),
+};
 
+const callModel: GraphNode<typeof State> = async (state, config) => {
+  const modelProvider = config?.configurable?.modelProvider || "anthropic";
+  const systemMessage = config?.configurable?.systemMessage;
 
+  const model = MODELS[modelProvider as keyof typeof MODELS];
+  let messages = state.messages;
 
+  if (systemMessage)
+    messages = [new SystemMessage(systemMessage), ...messages];
 
+  const response = await model.invoke(messages);
+  return { messages: [response] };
+};
 
+const graph = new StateGraph(State, ConfigSchema)
+  .addNode("model", callModel)
+  .addEdge(START, "model")
+  .addEdge("model", END)
+  .compile();
 
+// Usage
+const inputMessage = { role: "user", content: "hi" };
+const response = await graph.invoke(
+  { messages: [inputMessage] },
+  {
+    configurable: {
+      modelProvider: "openai",
+      systemMessage: "Respond in Italian."
+    }
+  }
+);
+```
+
+## 7. Runtime
+
+### 1. 访问节点内部的执行信息
+
+| 属性                   | 类型                 | 说明                                                     |
+| ---------------------- | -------------------- | -------------------------------------------------------- |
+| `threadId`             | `string | undefined` | 当前执行所属的会话线程 ID。                              |
+| `runId`                | `string | undefined` | 当前这次运行的 ID。                                      |
+| `checkpointId`         | `string`             | 当前执行的检查点 ID。                                    |
+| `checkpointNs`         | `string`             | 当前执行的检查点命名空间。                               |
+| `taskId`               | `string`             | 当前执行的任务 ID。                                      |
+| `nodeAttempt`          | `number`             | 当前节点的尝试次数，从 1 开始。                          |
+| `nodeFirstAttemptTime` | `number | undefined` | 首次尝试开始时的 Unix 时间戳，单位为秒；重试时保持不变。 |
+
+## 8.Graph可视化
+
+```ts
+const drawableGraph = await graph.getGraphAsync();
+//打印为文字
+console.log(drawableGraph.drawMermaid());
+// 转换为png格式
+const image = await drawableGraph.drawMermaidPng();
+const imageBuffer = new Uint8Array(await image.arrayBuffer());
+await fs.writeFile("graph.png", imageBuffer);
+```
 
 ## 各种存储: CheckPointer, Store, Cache,State,Context
 
