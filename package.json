@@ -8,16 +8,19 @@
     "build": "tsc"
   },
   "dependencies": {
+    "@langchain/langgraph": "^1.4.15",
     "dotenv": "^17.4.2",
     "zod": "^4.5.4"
   },
   "devDependencies": {
-    "@langchain/core": "^1.2.9",
+    "@langchain/core": "^1.2.11",
     "@langchain/openai": "^1.5.11",
     "@types/node": "^26.5.0",
+    "deepagents": "^1.13.4",
     "dotenv": "^17.4.2",
     "langchain": "^1.5.10",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.0"
   },
   "private": true
 }

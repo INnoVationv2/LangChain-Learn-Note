@@ -10,5 +10,7 @@
     "outDir": "dist",
     "types": ["node"]
   },
-  "include": ["0.quickstart/*.ts"]
+  "include": [
+    "src/**/*.ts"
+  ]
 }
