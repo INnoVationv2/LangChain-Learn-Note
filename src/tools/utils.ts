@@ -52,3 +52,5 @@ export function logToolCall(toolCalls: Array<ContentBlock.Tools.ToolCall> | unde
         ].join('\n')
     );
 }
+
+export const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));

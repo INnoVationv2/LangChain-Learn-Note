@@ -2,7 +2,7 @@ import {interrupt, MemorySaver, StateSchema} from '@langchain/langgraph';
 import * as z from 'zod';
 import {StateGraph, START, END, type GraphNode, Command} from '@langchain/langgraph';
 import {HumanMessage} from '@langchain/core/messages';
-import {unthinkingModel} from '../../tools/utils.ts';
+import {unthinkingModel} from '../../../tools/utils.ts';
 import {toolStrategy} from "langchain";
 
 // 定义State

@@ -1,9 +1,9 @@
 # 一.Graph API
-LangGraph 将智能体工作流建模为图，通过三个核心组件定义行为：
+LangGraph将Agent工作流建模为图，通过三个核心组件定义：
 
 1. `State`：共享数据结构，保存应用当前的数据快照。可以是任意类型，通常通过统一的Schema定义。
-2. `Nodes`：执行智能体逻辑的函数，接收当前状态，进行计算或产生副作用，并返回状态更新。
-3. `Edges`：决定接下来执行哪个节点，可以是固定连接，也可以是根据当前状态选择的条件分支。
+2. `Node`：执行逻辑的函数，接收`State`，进行计算，返回`State`更新。
+3. `Edge`：决定接下来执行哪个Node，可以是固定连接，也可以是动态选择。
 
 ## 1.State
 
@@ -91,10 +91,10 @@ new ReducedValue(
 - `guard(默认为true)`：若多个节点在同一Step写入数据，则抛出错误, false允许多次写入，最后一次写入的值生效。
 
 ```ts
-  tempCache: new UntrackedValue(
-    z.record(z.string(), z.unknown()),
-    { guard: true }
-  ),
+tempCache: new UntrackedValue(
+  z.record(z.string(), z.unknown()),
+  { guard: true }
+)
 ```
 
 ### 2.更新State
@@ -106,12 +106,12 @@ const State = new StateSchema({
   messages: MessagesValue,
   value: z.number(),
 });
-// 1.Node直接返回值, 会自动保存到State中
+// 方法1:Node直接返回值, 会自动保存到State中
 const node: GraphNode<typeof State> = (state) => {
   return { messages: [new AIMessage("Hello!")], value: 10 };
 };
 
-// 2.通过Command更新
+// 方法2:通过Command更新
 const nodeA = async (state: typeof stateSchema.State) => {
     return new Command({
       update: {
@@ -122,11 +122,7 @@ const nodeA = async (state: typeof stateSchema.State) => {
 }
 ```
 
-
-
-### 3. State, Update, Node
-
-从Schema中获取状态和更新类型
+### 3. 从Schema提取类型
 
 ```ts
 const MyStateSchema = new StateSchema({
@@ -138,7 +134,7 @@ const MyStateSchema = new StateSchema({
 // MyState: {messages: BaseMessage[], count: number}
 type MyState = typeof MyStateSchema.State;
 
-// 提取更新类型(partial, with reducer input types)
+// 提取更新类型
 // MyUpdate: {messages?: Messages, count?: number}
 type MyUpdate = typeof MyStateSchema.Update;
 
@@ -158,7 +154,7 @@ const State = new StateSchema({
 });
 
 //写法1
-const fetchNode_1: GraphNode<typeof State> = async (state, config) => {
+const fetchNode_1: GraphNode<typeof State> = async (state, runtime) => {
     const response = await fetch(`/api/data/${state.count}`);
     return {result: await response.text()};
 };
@@ -172,7 +168,7 @@ const fetchNode_2: typeof State.Node = async (state) => {
 
 ### 2.在Node中使用task
 
-如果一个`Node`包含多个操作，那么将每个操作作为`task`比拆分逻辑成多个Node中更容易。而且task的结果会被保存到检查点，因此恢复线程可以跳过节点内已完成的任务。
+如果一个`Node`包含多个操作，将这些操作作为一个`task`比拆分逻辑成多个Node中更容易。而且task的结果会被保存到检查点，因此恢复线程可以跳过节点内已完成的任务。
 
 ```ts
 const makeRequest = task("makeRequest", async (url: string) => {
@@ -188,9 +184,9 @@ const callApi: GraphNode<typeof State> = async (state) => {
 };
 ```
 
-### 3.Node缓存
+### 3.Node Cache
 
-可以为Node添加Cache, 缓存Node结果，相同输入时跳过重复计算
+可以为Node添加Cache, 缓存Node结果，输入相同时跳过重复计算
 
 ```ts
 const State = new StateSchema({
@@ -199,7 +195,6 @@ const State = new StateSchema({
 });
 
 const expensiveNode: GraphNode<typeof State> = async (state) => {
-  // Simulate an expensive operation
   await new Promise((resolve) => setTimeout(resolve, 3000));
   return { result: state.x * 2 };
 };
@@ -215,8 +210,8 @@ const graph = new StateGraph(State)
 - `keyFunc:`指定缓存的Key值。
 
   ```ts
-  注: 缓存保存的是节点执行的整体结果, keyFunc判断是否复用缓存的Key值。
-  有如下keyFunc: keyFunc: (input) => `user:${input.userId}`
+  注: 缓存保存的是节点执行的整体结果, keyFunc是指定复用缓存的Key值。
+  比如keyFunc: (input) => `user:${input.userId}`
   ```
 
   | 调用 | 输入                       | 行为                                                  |
@@ -225,14 +220,9 @@ const graph = new StateGraph(State)
   | 2    | `userId=123`，其他字段改变 | userId相同, 若缓存未过期, 则节点不执行, 直接复用结果  |
   | 3    | `userId=456`               | 缓存键不同，没有对应缓存就执行节点                    |
 
-- TTL: `缓存的生存时间，单位为秒。如果未指定，则缓存永不过期。
+- `TTL: `缓存的生存时间，单位为秒。如果未指定，则缓存永不过期。
 
-### 4.特殊节点
-
-- `START`节点: 表示接收用户输入的节点
-- `END`节点: 表示终止节点
-
-### 5.添加重试策略
+### 4.添加重试策略
 
 ```ts
 const graph = new StateGraph(State)
@@ -283,7 +273,7 @@ Demo
   })
 ```
 
-### 6.跳转到多个节点
+### 5.跳转到多个节点
 
 ```ts
 const routeBcOrCd: ConditionalEdgeRouter<{ InputSchema: typeof State; Nodes: "b" | "c" | "d" }> = (state) => {
@@ -354,7 +344,7 @@ graph.addConditionalEdges("nodeA", routingFunction, {
 
 ## 4. Send
 
-普通的Graph跳转共享的是State, Send可以只发送一部分的数据, 也可以构造数据.
+普通的Graph跳转共享State, Send可以只发送一部分的数据, 也可以构造数据.
 
 ```ts
 const sendNode = (state: typeof stateSchema.State) => state.nameList.map((name) => new Send('nodeB', {name}))
@@ -470,8 +460,6 @@ const myNode = (state: State): Command => {
   });
 };
 ```
-
-
 
 ## 6.Context
 
