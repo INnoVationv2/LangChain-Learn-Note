@@ -54,3 +54,12 @@ export function logToolCall(toolCalls: Array<ContentBlock.Tools.ToolCall> | unde
 }
 
 export const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
+
+export function createFileData(content: string) {
+    const now = new Date().toISOString();
+    return {
+        content: content.split('\n'),
+        created_at: now,
+        modified_at: now,
+    };
+}
