@@ -1,4 +1,4 @@
-import {createAgent} from "langchain";
+import {createAgent, tool} from "langchain";
 import {CompiledSubAgent, createDeepAgent, type SubAgent} from "deepagents";
 import {z} from "zod";
 import {test} from 'vitest'
@@ -45,5 +45,39 @@ test('CompiledSubAgent', async () => {
         tools: [getWeather],
         systemPrompt: researchInstructions,
         subagents: subagents,
+    });
+})
+
+test('Forked subagents', async () => {
+    const readDiff = tool(
+        async ({path}: { path: string }) => `diff for ${path}`,
+        {
+            name: "read_diff",
+            description: "Read a file's diff",
+            schema: z.object({path: z.string()}),
+        },
+    );
+
+    const commentWriter = {
+        name: "comment-writer",
+        description: "Continues an in-progress PR review and drafts review comments",
+        mode: "fork" as const,
+        tools: [readDiff],
+    };
+
+    const agent = createDeepAgent({
+        model: "anthropic:claude-sonnet-4-6",
+        tools: [readDiff],
+        subagents: [commentWriter],
+    });
+
+    const result = await agent.invoke({
+        messages: [
+            {
+                role: "user",
+                content:
+                    "Review PR #482 and hand it off to comment-writer to draft comments for the issues found",
+            },
+        ],
     });
 })
