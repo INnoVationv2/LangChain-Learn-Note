@@ -4,6 +4,8 @@ import {HumanMessage} from "@langchain/core/messages";
 import {createFileData, model} from "../../../tools/utils.ts";
 import {test} from 'vitest'
 import {getWeather} from "../../../1.LangChain/1.core-components/4.tool.test.ts";
+import {tool} from "@langchain/core/tools";
+import {Client} from "@langchain/langgraph-sdk";
 
 test('Agent memory', async () => {
     const store = new InMemoryStore();
@@ -142,4 +144,25 @@ test('User memory', async () => {
         );
         console.log(userId, 'LLM Output: ', result.messages.at(-1)?.content);
     }
+});
+
+test('Episodic memory', async () => {
+    const client = new Client({apiUrl: "<DEPLOYMENT_URL>"});
+
+    tool(async (_, runtime) => {
+        const userId = runtime.serverInfo?.user.identity;
+        const threads = await client.threads.search({
+            metadata: {userId},
+            limit: 5,
+        });
+        const results = []
+        for (const thread of threads) {
+            const history = await client.threads.getHistory(thread.thread_id)
+            results.push(history);
+        }
+        return JSON.stringify(results);
+    }, {
+        name: "search_past_conversations",
+        description: "Search past conversations for relevant context.",
+    })
 });
