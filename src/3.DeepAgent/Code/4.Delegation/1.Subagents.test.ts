@@ -4,6 +4,8 @@ import {z} from "zod";
 import {test} from 'vitest'
 import {model} from '../../../tools/utils.ts'
 import {getWeather} from "../../../1.LangChain/1.core-components/4.tool.test.ts";
+import type {ToolRuntime} from "@langchain/core/tools";
+import {HumanMessage} from "@langchain/core/messages";
 
 test('SubAgent', async () => {
     const researchSubagent: SubAgent = {
@@ -80,4 +82,57 @@ test('Forked subagents', async () => {
             },
         ],
     });
+})
+
+test('SubAgent Access Context', async () => {
+    const contextSchema = z.object({
+        userId: z.string(),
+        sessionId: z.string(),
+    });
+
+    const getUserData = tool(
+        async (input, runtime: ToolRuntime<unknown, typeof contextSchema>) => {
+            // Access Main Agent's Context
+            const userId = runtime.context?.userId;
+            return `Data for user ${userId}: ${input.query}`;
+        },
+        {
+            name: "get_user_data",
+            description: "Fetch data for the current user",
+            schema: z.object({query: z.string()}),
+        },
+    );
+
+    const researchSubagent = {
+        name: "researcher",
+        description: "Conducts research for the current user",
+        systemPrompt: "You are a research assistant.",
+        tools: [getUserData],
+    };
+
+    const agent = createDeepAgent({
+        model: "openai:gpt-5.5",
+        subagents: [researchSubagent],
+        contextSchema,
+    });
+
+    const result = await agent.invoke(
+        {messages: [new HumanMessage("Look up my recent activity")]},
+        {context: {userId: "user-123", sessionId: "abc"}},
+    );
+})
+
+test('Which Subagent Called Tool', async () => {
+    const sharedLookup = tool(
+        async (input, runtime: ToolRuntime) => {
+            // 获取调用Tool的Agent的name
+            const agentName = runtime.config?.metadata?.lc_agent_name;
+            console.log(agentName);
+        },
+        {
+            name: "shared_lookup",
+            description: "Look up information from various sources",
+            schema: z.object({ query: z.string() }),
+        },
+    );
 })
