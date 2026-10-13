@@ -1,12 +1,13 @@
 import {HITLRequest, Interrupt, tool} from 'langchain';
 import {createDeepAgent} from 'deepagents';
-import {MemorySaver} from '@langchain/langgraph';
+import {interrupt, MemorySaver} from '@langchain/langgraph';
 import {v7 as uuid7} from 'uuid';
 import {Command} from '@langchain/langgraph';
 import {test} from 'vitest'
 import {model} from '../../tools/utils.ts';
 import {HumanMessage} from '@langchain/core/messages';
 import {getRainingWeather, getSunnyWeather} from '../../1.LangChain/1.core-components/4.tool.test.ts';
+import {z} from "zod";
 
 const checkpointer = new MemorySaver();
 const agent = createDeepAgent({
@@ -138,4 +139,58 @@ test('Handle Interrupts With Streaming', async () => {
     }
 
     process.stdout.write("\n");
+})
+
+
+const getWeatherWithHITL = tool(
+    ({city}) => {
+        const decision = interrupt({
+            action: "get_weather",
+            city,
+            message: `是否允许查询 ${city} 的天气？`,
+        }) as { approved: boolean };
+
+        if (decision.approved) console.log('用户同意查询天气');
+        if (!decision.approved) return "用户拒绝查询天气";
+
+        return `It's always sunny in ${city}!`;
+    },
+    {
+        name: "get_weather",
+        description: "Get the weather for a given city",
+        schema: z.object({
+            city: z.string().describe("The city to get the weather for"),
+        }),
+    },
+);
+
+test('Interrupt Within Tool Calls', async () => {
+    const subagent = createDeepAgent({model, tools: [getWeatherWithHITL]});
+
+    const agent = createDeepAgent({
+        model,
+        checkpointer: new MemorySaver(),
+        subagents: [{
+            name: "get-weather-agent",
+            description: "所有和weather有关的任务都必须交给这个Agent",
+            runnable: subagent,
+        }],
+    });
+
+    const config = {configurable: {thread_id: "approval-demo"}};
+
+    let result = await agent.invoke({
+        messages: [new HumanMessage('How is the weather of NY')],
+    }, config);
+
+    if (result.__interrupt__?.length) {
+        console.log("待审批：", result.__interrupt__[0].value);
+
+        result = await agent.invoke(
+            new Command({resume: {approved: true}}),
+            config,
+        );
+    }
+
+    console.log(result.messages[result.messages.length - 1].content);
 })
