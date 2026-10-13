@@ -1,4 +1,4 @@
-import {HITLRequest, tool} from 'langchain';
+import {HITLRequest, Interrupt, tool} from 'langchain';
 import {createDeepAgent} from 'deepagents';
 import {MemorySaver} from '@langchain/langgraph';
 import {v7 as uuid7} from 'uuid';
@@ -83,4 +83,59 @@ test('Edit Interrupt', async () => {
     }
 
     console.log(result.messages[result.messages.length - 1].content);
+})
+
+test('Handle Interrupts With Streaming', async () => {
+    const config = {configurable: {thread_id: uuid7()}};
+    let streamInput: Parameters<typeof agent.stream>[0] | Command = {
+        messages: [new HumanMessage('How is the weather of NY')]
+    };
+
+    while (true) {
+        let pendingInterrupt: Interrupt<HITLRequest> | undefined;
+
+        for await (const chunk of await agent.stream(
+            streamInput,
+            {
+                streamMode: ["messages", "updates"],
+                ...config,
+            }
+        )) {
+            const [mode, data] = chunk;
+
+            if (mode === "messages") {
+                const [token] = data;
+                if (token.text)
+                    process.stdout.write(token.text);
+            }
+
+            if (mode === "updates" && data?.__interrupt__) {
+                pendingInterrupt = data.__interrupt__[0];
+            }
+        }
+
+        if (!pendingInterrupt) break;
+
+        const interruptValue = pendingInterrupt.value;
+        const actionRequests = interruptValue.actionRequests;
+        const reviewConfigs = interruptValue.reviewConfigs;
+        const configMap = Object.fromEntries(
+            reviewConfigs.map((cfg: any) => [cfg.actionName, cfg])
+        );
+
+        for (const action of actionRequests) {
+            const review = configMap[action.name];
+            console.log(`\nTool: ${action.name}`);
+            console.log(`Arguments: ${JSON.stringify(action.args)}`);
+            console.log(`Allowed: ${review.allowedDecisions}`);
+        }
+
+        const decisions = actionRequests.map(() => ({type: "approve"}));
+        // 既可以指定中断ID
+        streamInput = new Command({resume: {[pendingInterrupt.id]: {decisions}}});
+        // 也可以不指定中断ID, 顺序匹配中断
+        // streamInput = new Command({resume: {decisions}});
+    }
+
+    process.stdout.write("\n");
 })

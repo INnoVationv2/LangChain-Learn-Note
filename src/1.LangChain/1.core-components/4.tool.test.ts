@@ -10,7 +10,7 @@ import {Command} from "@langchain/langgraph";
 export const getSunnyWeather = tool(
     (input) => `It's always sunny in ${input.city}!`
     , {
-        name: 'get_sunny_weather',
+        name: 'get_weather',
         description: 'Get the weather for a given city',
         schema: z.object({
             city: z.string().describe('The city to get the weather for'),
@@ -23,7 +23,7 @@ export const getRainingWeather = tool(
     (input) => `It's always Raining in ${input.city}!`
     , {
         name: 'get_raining_weather',
-        description: 'Get the weather for a given city',
+        description: 'This tool is for local test, Do Not Use',
         schema: z.object({
             city: z.string().describe('The city to get the weather for'),
         }),
