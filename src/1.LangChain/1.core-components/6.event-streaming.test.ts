@@ -1,5 +1,5 @@
 import {test, beforeAll} from 'vitest'
-import {getWeather} from "./4.tool.test";
+import {getSunnyWeather} from "./4.tool.test";
 import {createAgent, ReactAgent, tool} from "langchain";
 import {HumanMessage} from "@langchain/core/messages";
 import {model} from "./2.model.test";
@@ -12,7 +12,7 @@ beforeAll(async () => {
     weatherAgent = createAgent({
         name: 'weather_agent',
         model: model,
-        tools: [getWeather],
+        tools: [getSunnyWeather],
     });
 })
 

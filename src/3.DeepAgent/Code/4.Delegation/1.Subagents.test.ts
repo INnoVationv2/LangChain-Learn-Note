@@ -3,7 +3,7 @@ import {CompiledSubAgent, createDeepAgent, type SubAgent} from "deepagents";
 import {z} from "zod";
 import {test} from 'vitest'
 import {model} from '../../../tools/utils.ts'
-import {getWeather} from "../../../1.LangChain/1.core-components/4.tool.test.ts";
+import {getSunnyWeather} from "../../../1.LangChain/1.core-components/4.tool.test.ts";
 import type {ToolRuntime} from "@langchain/core/tools";
 import {HumanMessage} from "@langchain/core/messages";
 
@@ -12,7 +12,7 @@ test('SubAgent', async () => {
         name: "research-agent",
         description: "Used to research more in depth questions",
         systemPrompt: "You are a great researcher",
-        tools: [getWeather],
+        tools: [getSunnyWeather],
         model: model,
     };
     const subagents = [researchSubagent];
@@ -44,7 +44,7 @@ test('CompiledSubAgent', async () => {
 
     const agent = createDeepAgent({
         model: "openai:gpt-5.5",
-        tools: [getWeather],
+        tools: [getSunnyWeather],
         systemPrompt: researchInstructions,
         subagents: subagents,
     });

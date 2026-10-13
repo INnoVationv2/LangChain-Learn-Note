@@ -7,10 +7,22 @@ import {InMemoryStore} from '@langchain/langgraph';
 import {Command} from "@langchain/langgraph";
 
 // 1.创建工具, 工具命名使用下划线
-export const getWeather = tool(
+export const getSunnyWeather = tool(
     (input) => `It's always sunny in ${input.city}!`
     , {
-        name: 'get_weather',
+        name: 'get_sunny_weather',
+        description: 'Get the weather for a given city',
+        schema: z.object({
+            city: z.string().describe('The city to get the weather for'),
+        }),
+    }
+);
+
+// 1.创建工具, 工具命名使用下划线
+export const getRainingWeather = tool(
+    (input) => `It's always Raining in ${input.city}!`
+    , {
+        name: 'get_raining_weather',
         description: 'Get the weather for a given city',
         schema: z.object({
             city: z.string().describe('The city to get the weather for'),
@@ -99,7 +111,8 @@ test('Long-Term Memory(Save)', async () => {
 test('Stream writer', async () => {
         const getWeather = tool(
             ({city}, runtime: ToolRuntime) => {
-                const writer = runtime.writer;runtime
+                const writer = runtime.writer;
+                runtime
 
                 // Tool执行时, 打印状态更新信息，向用户提供反馈。
                 if (writer) {

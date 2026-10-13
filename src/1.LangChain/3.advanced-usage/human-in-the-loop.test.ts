@@ -1,6 +1,6 @@
 import {Command, MemorySaver, interrupt} from '@langchain/langgraph';
 import {createAgent, createMiddleware, humanInTheLoopMiddleware} from 'langchain';
-import {getWeather} from '../1.core-components/4.tool.test';
+import {getSunnyWeather} from '../1.core-components/4.tool.test';
 import {model} from '../../tools/utils';
 import {HumanMessage} from '@langchain/core/messages';
 import {test} from 'vitest'
@@ -9,7 +9,7 @@ import {test} from 'vitest'
 async function humanInTheLoop() {
     const agent = createAgent({
         model: model,
-        tools: [getWeather],
+        tools: [getSunnyWeather],
         middleware: [
             humanInTheLoopMiddleware({
                 interruptOn: {

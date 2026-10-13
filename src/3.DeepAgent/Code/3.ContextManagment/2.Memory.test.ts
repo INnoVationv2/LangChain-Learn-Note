@@ -3,7 +3,7 @@ import {getConfig, InMemoryStore} from "@langchain/langgraph";
 import {HumanMessage} from "@langchain/core/messages";
 import {createFileData, model} from "../../../tools/utils.ts";
 import {test} from 'vitest'
-import {getWeather} from "../../../1.LangChain/1.core-components/4.tool.test.ts";
+import {getSunnyWeather} from "../../../1.LangChain/1.core-components/4.tool.test.ts";
 import {tool} from "@langchain/core/tools";
 import {Client} from "@langchain/langgraph-sdk";
 
@@ -118,7 +118,7 @@ test('User memory', async () => {
         model: model,
         memory: ['/memories/preferences.md'],
         // skills: ['/skills/'],
-        tools: [getWeather],
+        tools: [getSunnyWeather],
         backend: backend,
         store,
     });

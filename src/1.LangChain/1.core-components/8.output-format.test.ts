@@ -1,7 +1,7 @@
 import * as z from "zod";
 import {createAgent, providerStrategy, toolStrategy} from "langchain";
 import {unthinkingModel} from "../../tools/utils.ts";
-import {getWeather} from "./4.tool.test";
+import {getSunnyWeather} from "./4.tool.test";
 import {HumanMessage} from "@langchain/core/messages";
 import {test} from 'vitest'
 import {ToolInputParsingException} from "@langchain/core/tools";
@@ -15,7 +15,7 @@ test('format output', async () => {
     const weatherDetailSchema = z.object({city: z.string(), weather: z.string()})
     const agent = createAgent({
         model: unthinkingModel,
-        tools: [getWeather],
+        tools: [getSunnyWeather],
         responseFormat: weatherDetailSchema,
         // responseFormat: providerStrategy(weatherDetailSchema),
         // responseFormat: toolStrategy(weatherDetailSchema),
@@ -47,7 +47,7 @@ test('Custom ToolStrategy', async () => {
     const weatherDetailSchema = z.object({city: z.string(), weather: z.string()})
     const agent = createAgent({
         model: unthinkingModel,
-        tools: [getWeather],
+        tools: [getSunnyWeather],
         responseFormat: toolStrategy(weatherDetailSchema, {
             toolMessageContent: "Hello From responseFormat/toolStrategy/ToolMessageContent"
         })

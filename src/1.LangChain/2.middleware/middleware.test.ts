@@ -2,7 +2,7 @@ import {AIMessage, createAgent, createMiddleware, humanInTheLoopMiddleware, init
 import {z} from 'zod';
 import {test} from 'vitest';
 import {model} from "../1.core-components/2.model.test";
-import {getWeather} from "../1.core-components/4.tool.test";
+import {getSunnyWeather} from "../1.core-components/4.tool.test";
 import {HumanMessage, ToolMessage} from "@langchain/core/messages";
 import {Command, InMemoryStore} from "@langchain/langgraph";
 import {unthinkingModel} from "../../tools/utils";
@@ -18,7 +18,7 @@ Middleware的作用
 // readEmail/sendEmail are registered with name:read_email/send_email
 const emailAgent = createAgent({
     model: "claude-sonnet-4-6",
-    tools: [getWeather],
+    tools: [getSunnyWeather],
     middleware: [humanInTheLoopMiddleware({
         interruptOn: {get_weather: true}
     })],
@@ -49,7 +49,7 @@ test('Middleware Lifecycle Demo', async () => {
 
     const agent = createAgent({
         model: model,
-        tools: [getWeather],
+        tools: [getSunnyWeather],
         middleware: [
             middleware('middleware-1'),
             middleware('middleware-2')

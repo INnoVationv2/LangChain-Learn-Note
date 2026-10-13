@@ -8,7 +8,7 @@ import {
 import {model} from "../../tools/utils.ts";
 import {load} from "@langchain/core/load";
 import {test} from "vitest"
-import {getWeather} from "./4.tool.test";
+import {getSunnyWeather} from "./4.tool.test";
 
 /*
 四类消息
@@ -32,7 +32,7 @@ test("Message Demo", async () => {
 
 // 3.1 Tool Call
 test("ToolCallMessage Demo", async () => {
-    const modelWithTools = model.bindTools([getWeather]);
+    const modelWithTools = model.bindTools([getSunnyWeather]);
     const response = await modelWithTools.invoke("What's the weather in Paris?");
     const toolCall = response.tool_calls![0]
     console.log(`Tool: ${toolCall.name}`);

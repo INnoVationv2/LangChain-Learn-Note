@@ -3,14 +3,14 @@ import * as z from "zod";
 import {AIMessage, createAgent, providerStrategy, todoListMiddleware, type ToolRuntime} from "langchain";
 import {test} from "vitest";
 import {ApiKey, BaseURL, model, MODEL} from "../../tools/utils.ts";
-import {getWeather} from "../1.core-components/4.tool.test";
+import {getSunnyWeather} from "../1.core-components/4.tool.test";
 import {ChatOpenAI} from "@langchain/openai";
 import {MemorySaver} from "@langchain/langgraph";
 import {createFilesystemMiddleware, createSubAgentMiddleware, StateBackend} from "deepagents";
 
 test('Basic Agent', async () => {
     const agent = createAgent({
-        model: model, tools: [getWeather]
+        model: model, tools: [getSunnyWeather]
     })
 
     const msg = await agent.invoke({
