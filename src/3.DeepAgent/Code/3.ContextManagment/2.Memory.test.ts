@@ -3,7 +3,7 @@ import {getConfig, InMemoryStore} from "@langchain/langgraph";
 import {HumanMessage} from "@langchain/core/messages";
 import {createFileData, model} from "../../../tools/utils.ts";
 import {test} from 'vitest'
-import {getSunnyWeather} from "../../../1.LangChain/1.core-components/4.tool.test.ts";
+import {getSunnyWeather} from "../../../1.LangChain/Code/1.CoreComponents/4.tool.test.ts";
 import {tool} from "@langchain/core/tools";
 import {Client} from "@langchain/langgraph-sdk";
 

@@ -1,7 +1,7 @@
 import {Command, MemorySaver, interrupt} from '@langchain/langgraph';
 import {createAgent, createMiddleware, humanInTheLoopMiddleware} from 'langchain';
-import {getSunnyWeather} from '../1.core-components/4.tool.test';
-import {model} from '../../tools/utils';
+import {getSunnyWeather} from '../1.CoreComponents/4.tool.test.ts';
+import {model} from '../../../tools/utils.ts';
 import {HumanMessage} from '@langchain/core/messages';
 import {test} from 'vitest'
 

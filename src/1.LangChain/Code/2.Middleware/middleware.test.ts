@@ -1,11 +1,11 @@
 import {AIMessage, createAgent, createMiddleware, humanInTheLoopMiddleware, initChatModel, Tool} from "langchain";
 import {z} from 'zod';
 import {test} from 'vitest';
-import {model} from "../1.core-components/2.model.test";
-import {getSunnyWeather} from "../1.core-components/4.tool.test";
+import {model} from "../1.CoreComponents/2.model.test.ts";
+import {getSunnyWeather} from "../1.CoreComponents/4.tool.test.ts";
 import {HumanMessage, ToolMessage} from "@langchain/core/messages";
 import {Command, InMemoryStore} from "@langchain/langgraph";
-import {unthinkingModel} from "../../tools/utils";
+import {unthinkingModel} from "../../../tools/utils.ts";
 /*
 Middleware的作用
 - 通过日志记录, 分析和调试来跟踪Agent行为

@@ -1,5 +1,5 @@
 import {ChatOpenAI} from "@langchain/openai";
-import {ApiKey, BaseURL, MODEL} from "../../tools/utils.ts";
+import {ApiKey, BaseURL, MODEL} from "../../../tools/utils.ts";
 import {initChatModel} from "langchain";
 
 // 两种创建Model的方式

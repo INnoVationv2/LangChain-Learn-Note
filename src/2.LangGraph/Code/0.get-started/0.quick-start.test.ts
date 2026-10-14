@@ -11,7 +11,7 @@ import {
 } from "@langchain/langgraph";
 import {HumanMessage, SystemMessage, ToolMessage} from "@langchain/core/messages";
 import {AIMessage} from "langchain";
-import {model} from "../../../1.LangChain/1.core-components/2.model.test.ts";
+import {model} from "../../../1.LangChain/Code/1.CoreComponents/2.model.test.ts";
 
 // A simple calculate demo
 const add = tool(({a, b}) => a + b, {

@@ -9,7 +9,7 @@ import {
     tool,
     ToolRuntime
 } from "langchain";
-import {model} from "./2.model.test";
+import {model} from "./2.model.test.ts";
 import {z} from "zod";
 
 // 向Agent传入不同的config, 其中包含不同的thread_id

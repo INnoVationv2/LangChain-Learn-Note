@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import {ChatOpenAI} from '@langchain/openai';
+import {ChatOpenAI, OpenAIEmbeddings} from '@langchain/openai';
 import {type ContentBlock, type UsageMetadata} from "@langchain/core/messages";
 
 function getEnv(name: string): string {
@@ -11,8 +11,8 @@ function getEnv(name: string): string {
 }
 
 export const MODEL = getEnv('MODEL_ID');
-export const BaseURL = getEnv('LLM_BASE_URL')
-export const ApiKey = getEnv('API_KEY')
+export const BaseURL = getEnv('LLM_BASE_URL');
+export const ApiKey = getEnv('API_KEY');
 
 export const model = new ChatOpenAI({
     model: MODEL,
@@ -27,6 +27,18 @@ export const unthinkingModel = new ChatOpenAI({
     apiKey: ApiKey,
     configuration: {baseURL: BaseURL,},
     modelKwargs: {thinking: {type: "disabled"}}
+});
+
+export const EmbeddingModel = getEnv('EMBEDDING_MODEL_ID');
+export const EmbeddingApiKey = getEnv('EMBEDDING_API_KEY');
+export const EmbeddingBaseURL = getEnv('EMBEDDING_LLM_BASE_URL');
+
+export const embeddingModel = new OpenAIEmbeddings({
+    model: EmbeddingModel,
+    apiKey: EmbeddingApiKey,
+    configuration: {
+        baseURL: EmbeddingBaseURL,
+    },
 });
 
 export function logMetadata(metadata: UsageMetadata | undefined) {
@@ -44,7 +56,7 @@ export function logMetadata(metadata: UsageMetadata | undefined) {
 export function logToolCall(toolCalls: Array<ContentBlock.Tools.ToolCall> | undefined) {
     if (!toolCalls || toolCalls.length === 0) return;
 
-    const toolCall = toolCalls.at(-1)
+    const toolCall = toolCalls.at(-1);
     console.log([
             `   ToolCall:`,
             `       Tool name: ${toolCall?.name}`,

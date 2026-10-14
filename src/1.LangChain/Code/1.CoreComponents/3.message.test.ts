@@ -5,10 +5,10 @@ import {
     AIMessageChunk,
     ContentBlock
 } from "@langchain/core/messages";
-import {model} from "../../tools/utils.ts";
+import {model} from "../../../tools/utils.ts";
 import {load} from "@langchain/core/load";
 import {test} from "vitest"
-import {getSunnyWeather} from "./4.tool.test";
+import {getSunnyWeather} from "./4.tool.test.ts";
 
 /*
 四类消息

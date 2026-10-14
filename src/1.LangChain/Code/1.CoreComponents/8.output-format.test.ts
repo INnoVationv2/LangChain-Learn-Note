@@ -1,7 +1,7 @@
 import * as z from "zod";
 import {createAgent, providerStrategy, toolStrategy} from "langchain";
-import {unthinkingModel} from "../../tools/utils.ts";
-import {getSunnyWeather} from "./4.tool.test";
+import {unthinkingModel} from "../../../tools/utils.ts";
+import {getSunnyWeather} from "./4.tool.test.ts";
 import {HumanMessage} from "@langchain/core/messages";
 import {test} from 'vitest'
 import {ToolInputParsingException} from "@langchain/core/tools";

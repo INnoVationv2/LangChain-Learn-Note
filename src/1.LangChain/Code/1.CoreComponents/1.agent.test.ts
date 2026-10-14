@@ -1,8 +1,8 @@
 import {createAgent, createMiddleware, tool, type ToolRuntime} from "langchain";
 import {HumanMessage} from '@langchain/core/messages';
 import {test} from 'vitest'
-import {closeThinkingMode, model} from "./2.model.test";
-import {getWeather} from "../../tools/tools.ts";
+import {closeThinkingMode, model} from "./2.model.test.ts";
+import {getWeather} from "../../../tools/tools.ts";
 import {z} from "zod";
 import {StateSchema} from "@langchain/langgraph";
 

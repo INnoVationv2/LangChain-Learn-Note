@@ -1,9 +1,9 @@
 import {test, beforeAll} from 'vitest'
-import {getSunnyWeather} from "./4.tool.test";
+import {getSunnyWeather} from "./4.tool.test.ts";
 import {createAgent, ReactAgent, tool} from "langchain";
 import {HumanMessage} from "@langchain/core/messages";
-import {model} from "./2.model.test";
-import {logMetadata, logToolCall} from "../../tools/utils";
+import {model} from "./2.model.test.ts";
+import {logMetadata, logToolCall} from "../../../tools/utils.ts";
 import {z} from "zod";
 
 let weatherAgent: ReactAgent

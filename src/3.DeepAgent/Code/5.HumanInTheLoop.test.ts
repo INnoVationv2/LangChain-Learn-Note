@@ -6,7 +6,7 @@ import {Command} from '@langchain/langgraph';
 import {test} from 'vitest'
 import {model} from '../../tools/utils.ts';
 import {HumanMessage} from '@langchain/core/messages';
-import {getRainingWeather, getSunnyWeather} from '../../1.LangChain/1.core-components/4.tool.test.ts';
+import {getRainingWeather, getSunnyWeather} from '../../1.LangChain/Code/1.CoreComponents/4.tool.test.ts';
 import {z} from "zod";
 
 const checkpointer = new MemorySaver();

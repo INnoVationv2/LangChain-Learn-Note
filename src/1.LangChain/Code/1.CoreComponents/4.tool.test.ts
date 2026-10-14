@@ -1,6 +1,6 @@
 import {createAgent, createMiddleware, tool, ToolRuntime} from 'langchain';
 import {z} from 'zod';
-import {model} from './2.model.test';
+import {model} from './2.model.test.ts';
 import {HumanMessage, ToolMessage} from '@langchain/core/messages';
 import {test} from 'vitest';
 import {InMemoryStore} from '@langchain/langgraph';
