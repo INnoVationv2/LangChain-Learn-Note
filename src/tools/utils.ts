@@ -30,12 +30,15 @@ export const unthinkingModel = new ChatOpenAI({
     modelKwargs: {thinking: {type: "disabled"}}
 });
 
-export function modelWithStructuredOutput<T extends z.ZodObject>(struct: T) {
+export function modelWithStructuredOutput<T extends z.ZodObject>(outputFormat: T) {
     return new ChatOpenAI({
         model: MODEL,
         apiKey: ApiKey,
         configuration: {baseURL: BaseURL},
-    }).withStructuredOutput<z.infer<T>>(struct);
+        modelKwargs: {thinking: {type: "disabled"}}
+    }).withStructuredOutput<z.infer<T>>(outputFormat, {
+        method: "functionCalling"
+    });
 }
 
 export const EmbeddingModel = getEnv('EMBEDDING_MODEL_ID');
