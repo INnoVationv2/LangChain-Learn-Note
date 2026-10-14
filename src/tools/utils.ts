@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import {ChatOpenAI, OpenAIEmbeddings} from '@langchain/openai';
 import {type ContentBlock, type UsageMetadata} from "@langchain/core/messages";
+import {z} from "zod";
 
 function getEnv(name: string): string {
     const value = process.env[name];
@@ -28,6 +29,14 @@ export const unthinkingModel = new ChatOpenAI({
     configuration: {baseURL: BaseURL,},
     modelKwargs: {thinking: {type: "disabled"}}
 });
+
+export function modelWithStructuredOutput<T extends z.ZodObject>(struct: T) {
+    return new ChatOpenAI({
+        model: MODEL,
+        apiKey: ApiKey,
+        configuration: {baseURL: BaseURL},
+    }).withStructuredOutput<z.infer<T>>(struct);
+}
 
 export const EmbeddingModel = getEnv('EMBEDDING_MODEL_ID');
 export const EmbeddingApiKey = getEnv('EMBEDDING_API_KEY');
