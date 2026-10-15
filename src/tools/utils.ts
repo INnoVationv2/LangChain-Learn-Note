@@ -2,6 +2,7 @@ import 'dotenv/config';
 import {ChatOpenAI, OpenAIEmbeddings} from '@langchain/openai';
 import {type ContentBlock, type UsageMetadata} from "@langchain/core/messages";
 import {z} from "zod";
+import {createAgent} from "langchain";
 
 function getEnv(name: string): string {
     const value = process.env[name];
@@ -15,13 +16,17 @@ export const MODEL = getEnv('MODEL_ID');
 export const BaseURL = getEnv('LLM_BASE_URL');
 export const ApiKey = getEnv('API_KEY');
 
-export const model = new ChatOpenAI({
-    model: MODEL,
-    apiKey: ApiKey,
-    configuration: {
-        baseURL: BaseURL,
-    },
-});
+export function getModel() {
+    return new ChatOpenAI({
+        model: MODEL,
+        apiKey: ApiKey,
+        configuration: {
+            baseURL: BaseURL,
+        },
+    });
+}
+
+export const model = getModel();
 
 export const unthinkingModel = new ChatOpenAI({
     model: MODEL,
