@@ -78,7 +78,7 @@ const collection = client
     .collection('4.RAGWithDeepAgents');
 
 embeddingModel.batchSize = 20;
-const vectorStore = new MongoDBAtlasVectorSearch(embeddingModel, {
+export const vectorStore = new MongoDBAtlasVectorSearch(embeddingModel, {
     collection: collection,
     indexName: "vector_index",
     textKey: "text",

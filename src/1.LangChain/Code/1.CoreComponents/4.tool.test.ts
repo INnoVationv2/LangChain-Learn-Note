@@ -3,14 +3,13 @@ import {z} from 'zod';
 import {model} from './2.model.test.ts';
 import {HumanMessage, ToolMessage} from '@langchain/core/messages';
 import {test} from 'vitest';
-import {InMemoryStore} from '@langchain/langgraph';
-import {Command} from "@langchain/langgraph";
+import {Command, InMemoryStore} from '@langchain/langgraph';
 
-// 1.创建工具, 工具命名使用下划线
+// 1.创建Tool
 export const getSunnyWeather = tool(
     (input) => `It's always sunny in ${input.city}!`
     , {
-        name: 'get_weather',
+        name: 'get_weather', // Tool命名使用下划线
         description: 'Get the weather for a given city',
         schema: z.object({
             city: z.string().describe('The city to get the weather for'),
@@ -18,7 +17,6 @@ export const getSunnyWeather = tool(
     }
 );
 
-// 1.创建工具, 工具命名使用下划线
 export const getRainingWeather = tool(
     (input) => `It's always Raining in ${input.city}!`
     , {
@@ -31,20 +29,24 @@ export const getRainingWeather = tool(
 );
 
 // 2.访问上下文
+//   State: 保存对话、任务进度和中间结果
 //   Context: 保存不可变的配置数据
 test('Context', async () => {
     const getUserDetailTool = tool(
-        ({userId}, config) => {
-            return `UserID: ${userId}, Password: ${config.context.password}`
+        ({userId}, runtime: ToolRuntime<any, any>) => {
+            // 访问State
+            const messages = runtime.state.messages;
+            const msg = `当前有 ${messages.length} 条消息`;
+            return `UserID: ${userId}, Password: ${runtime.context.password}`;
         },
         {
             name: 'get_user_detail',
             description: 'Get user detail by user id',
             schema: z.object({userId: z.string()})
         }
-    )
+    );
 
-    const myContextSchema = z.object({password: z.string()})
+    const myContextSchema = z.object({password: z.string()});
 
     const agent = createAgent({
         model: model,
@@ -58,11 +60,11 @@ test('Context', async () => {
     );
 
     console.log(msg);
-})
+});
 
-// Long-Term Memory(Save)
-test('Long-Term Memory(Save)', async () => {
-    // 有很多种持久化存储实现: PostgresStore、MongoDBStore，RedisStore
+// 长期记忆Store
+test('Long-Term Memory(Store)', async () => {
+    // 有很多种持久化存储实现:PostgresStore、MongoDBStore，RedisStore...
     const store = new InMemoryStore();
 
     const getUserInfo = tool(
@@ -105,14 +107,13 @@ test('Long-Term Memory(Save)', async () => {
     let result = await agent.invoke({messages: [new HumanMessage('Save the following user: userid: abc123, name: Foo, age: 25, email: foo@langchain.dev')],});
     result = await agent.invoke({messages: [new HumanMessage("Get user info for user with id 'abc123'")],});
     console.log(result);
-}, 600000)
+}, 600000);
 
 
 test('Stream writer', async () => {
         const getWeather = tool(
             ({city}, runtime: ToolRuntime) => {
                 const writer = runtime.writer;
-                runtime
 
                 // Tool执行时, 打印状态更新信息，向用户提供反馈。
                 if (writer) {
@@ -157,7 +158,7 @@ test('Stream writer', async () => {
         for await (const chunk of stream)
             console.log(chunk); // 这里才真正打印
     }
-)
+);
 
 test('Tool Return Value', async () => {
     // 返回字符串
@@ -194,8 +195,8 @@ test('Tool Return Value', async () => {
         }
     );
 
-    // 返回一个命令, 该命令使用update更新状态。
-    // 当Tool需要改变Agent的状态时，使用此功能。
+    // 返回一个命令, 该命令使用update更新State的值。
+    // 当Tool需要改变Agent的State时，使用此功能。
     const setLanguage = tool(
         async ({language}, runtime: ToolRuntime) => {
             return new Command({
@@ -216,13 +217,13 @@ test('Tool Return Value', async () => {
     );
 
     /* 直接从工具返回
-       使用此选项后，Agent会将tool的输出直接打印
-       不会发回大模型进行进一步处理。
+       使用此选项后，Agent会将tool的结果直接打印
+       不会发回大模型进一步处理。
 
        1.如果模型在一个步骤中调用了多个工具，只有当所有的 tool 都执行完成时，
          才会输出结果, 而且会输出每一个tool的结果
-       2.只有当所有的tool都开启了return_direct，才会直接输出而不是发
-         送结果给大模型, 否则仍会将结果发送回模型。
+       2.只有当所有的tool都开启了return_direct，才会直接输出,
+         否则仍会发送回模型
     */
     const getWeather_direct = tool(
         ({city}) => `It is currently sunny in ${city}.`, {
@@ -239,31 +240,30 @@ test('Tool Return Value', async () => {
         {messages: [new HumanMessage('How is the weather of New York?')]}
     );
     console.log(msg.messages.at(-1)!.content);
-})
+});
 
 // 使用Middleware处理Tool错误。
 const handleToolErrors = createMiddleware({
     name: "HandleToolErrors",
-    // wrapToolCall 的详细说明在`中间件章节`中
+    // wrapToolCall的详细说明在`Middleware章节`中
     wrapToolCall: async (request, handler) => {
         try {
             return await handler(request);
         } catch (error) {
             return new ToolMessage({
-                content: `Tool error: Please check your input and try again. (${error})`,
+                content: `Tool error:
+                 Please check your input and try again. (${error})`,
                 tool_call_id: request.toolCall.id!,
             });
         }
     },
 });
 
-// 动态选择工具: 根据身份验证状态、用户权限、对话阶段调整tool list，
-// 而不是每次都发送所有Tool。
-// 1.仅当满足某些条件时, 才启用高级工具。
+// 动态选择Tool:根据身份、用户权限、对话阶段动态调整tool list，
+// 1.仅当满足条件时, 才启用高级工具。
 const stateBasedTools = createMiddleware({
     name: "StateBasedTools",
     wrapModelCall: (request, handler) => {
-        // Read from State: check authentication and conversation length
         const state = request.state as typeof request.state & {
             authenticated?: boolean;
         };
@@ -273,10 +273,12 @@ const stateBasedTools = createMiddleware({
         let filteredTools = request.tools;
 
         if (!isAuthenticated) {
-            filteredTools = request.tools.filter((t: any) => typeof t.name === "string" &&
+            filteredTools = request.tools.filter((t: any) =>
+                typeof t.name === "string" &&
                 t.name.startsWith("public_"),);
         } else if (messageCount < 5) {
-            filteredTools = request.tools.filter((t: any) => typeof t.name === "string" &&
+            filteredTools = request.tools.filter((t: any) =>
+                typeof t.name === "string" &&
                 t.name !== "advanced_search",);
         }
 
@@ -284,7 +286,7 @@ const stateBasedTools = createMiddleware({
     },
 });
 
-// 2.根据用户ID,找出这个用户可以使用的Tools
+// 2.根据用户ID找出可使用的Tools
 const contextSchema = z.object({userId: z.string(),});
 const storeBasedTools = createMiddleware({
     name: "StoreBasedTools",
@@ -332,10 +334,6 @@ const contextBasedTools = createMiddleware({
 });
 
 // 在运行时添加Tool，比如可以从MCP服务器加载。
-// 需要两个中间件钩子：
-// - wrap_model_call: 将动态工具添加到请求中
-// - wrap_tool_call: 处理动态添加工具的执行
-// A tool that will be added dynamically at runtime
 const calculateTip = tool(
     ({billAmount, tipPercentage = 20}) => {
         const tip = billAmount * (tipPercentage / 100);
@@ -351,18 +349,21 @@ const calculateTip = tool(
     }
 );
 
+// 需要两个中间件钩子：
+//   wrap_model_call: 将Tool的定义发送给LLM
+//   wrap_tool_call: 处理对动态Tool的调用
 const dynamicToolMiddleware = createMiddleware({
     name: "DynamicToolMiddleware",
     wrapModelCall: (request, handler) => {
-        // Add dynamic tool to the request
-        // This could be loaded from an MCP server, database, etc.
         return handler({
             ...request,
+            // 将动态Tool添加到消息中
             tools: [...request.tools, calculateTip],
         });
     },
     wrapToolCall: (request, handler) => {
         if (request.toolCall.name === "calculate_tip")
+            // 调用动态Tool
             return handler({...request, tool: calculateTip});
         return handler(request);
     },

@@ -9,19 +9,7 @@ import {ChatPromptTemplate} from '@langchain/core/prompts';
 import {z} from 'zod';
 import {AIMessage} from "langchain";
 import {ToolNode} from "@langchain/langgraph/prebuilt";
-
-const client = new MongoClient(process.env.MONGODB_URI || '');
-const collection = client
-    .db(process.env.MONGODB_DB_NAME)
-    .collection('4.RAGWithDeepAgents');
-
-embeddingModel.batchSize = 20;
-const vectorStore = new MongoDBAtlasVectorSearch(embeddingModel, {
-    collection: collection,
-    indexName: 'vector_index',
-    textKey: 'text',
-    embeddingKey: 'embedding',
-});
+import {vectorStore} from "./4.RAGWithDeepAgents.test.ts";
 
 const retriever = vectorStore.asRetriever();
 const tool = createRetrieverTool(retriever, {
